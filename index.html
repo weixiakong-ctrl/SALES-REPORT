@@ -1,91 +1,145 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一线城市电商销售分析报告</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        tr:hover { background-color: #f5f5f5; }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-4">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h1 class="text-3xl font-bold mb-4 text-center">一线城市电商销售分析报告</h1>
-            <p class="text-gray-600 mb-6 text-center">数据来源：2024年电商销售数据</p>
-            <h2 class="text-2xl font-semibold mb-4">详细数据</h2>
-            <table id="salesTable">
-                <thead>
-                    <tr>
-                        <th>城市</th>
-                        <th>产品类别</th>
-                        <th>销售额 (元)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <h2 class="text-2xl font-semibold mb-4">数据洞察</h2>
-            <p id="insight" class="text-gray-700">加载中...</p>
-        </div>
-    </div>
-    <script>
-        fetch('data.csv')
-            .then(response => response.text())
-            .then(text => {
-                console.log('CSV内容:', text); // 调试
-                const firstLine = text.split('\n')[0];
-                const separator = firstLine.includes(',') ? ',' : firstLine.includes(';') ? ';' : ',';
-                console.log('检测到的分隔符:', separator); // 调试
-                const lines = text.trim().split('\n').slice(1);
-                const data = lines.map((line, index) => {
-                    const parts = line.split(separator);
-                    console.log(`行${index + 1}:`, parts); // 调试
-                    if (parts.length >= 3) {
-                        return {
-                            city: parts[0].trim(),
-                            category: parts[1].trim(),
-                            sales: parseFloat(parts[2].trim())
-                        };
-                    }
-                    return null;
-                }).filter(row => row && row.city && row.category && !isNaN(row.sales));
-                console.log('解析后的数据:', data); // 调试
-                const tbody = document.querySelector('#salesTable tbody');
-                tbody.innerHTML = '';
-                if (data.length === 0) {
-                    document.getElementById('insight').textContent = '无有效数据，请检查CSV格式。';
-                    return;
-                }
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="border p-2">${row.city}</td>
-                        <td class="border p-2">${row.category}</td>
-                        <td class="border p-2">${row.sales.toLocaleString('zh-CN')}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                const cityTotals = data.reduce((acc, item) => {
-                    acc[item.city] = (acc[item.city] || 0) + item.sales;
-                    return acc;
-                }, {});
-                const topCity = Object.entries(cityTotals).reduce(
-                    (top, [city, sales]) => sales > top.sales ? { city, sales } : top,
-                    { city: '', sales: 0 }
-                );
-                document.getElementById('insight').textContent = 
-                    topCity.city ? 
-                    `${topCity.city}是销售额最高的城市，总额达到${topCity.sales.toLocaleString('zh-CN')}元，占主导地位的品类是电子产品。` :
-                    '无有效数据';
-            })
-            .catch(error => {
-                document.getElementById('insight').textContent = '加载数据失败，请检查data.csv文件。';
-                console.error('Error loading CSV:', error);
-            });
-    </script>
-</body>
-</html>
+       <html lang="zh-CN">
+       <head>
+           <meta charset="UTF-8">
+           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+           <title>销售报告</title>
+           <script src="https://cdn.tailwindcss.com"></script>
+           <style>
+               table { width: 100%; border: 1px solid gray; margin-bottom: 20px; }
+               th, td { border: 1px solid gray; padding: 8px; text-align: center; }
+               th { background-color: lightgray; }
+               tr:hover { background-color: #f0f0f0; }
+           </style>
+       </head>
+       <body style="background-color: #f5f5f5; font-family: Arial;">
+           <div style="width: 80%; margin: 20px auto; padding: 20px; background-color: white; border-radius: 8px;">
+               <h1 style="font-size: 24px; font-weight: bold; text-align: center;">一线城市电商销售报告</h1>
+               <p style="color: gray; text-align: center;">数据来源：2024年电商数据</p>
+               <div style="margin-bottom: 20px;">
+                   <label style="display: block; font-size: 14px;">选择数据文件（data.csv）：</label>
+                   <input type="file" id="csvInput" accept=".csv" style="margin-top: 10px;">
+               </div>
+               <h2 style="font-size: 20px; font-weight: bold;">数据表格</h2>
+               <table id="salesTable">
+                   <thead>
+                       <tr>
+                           <th>城市</th>
+                           <th>产品类别</th>
+                           <th>销售额 (元)</th>
+                       </tr>
+                   </thead>
+                   <tbody></tbody>
+               </table>
+               <h2 style="font-size: 20px; font-weight: bold;">数据洞察</h2>
+               <p id="totalInsight" style="color: gray;">请上传data.csv文件</p>
+               <h3 style="font-size: 18px; font-weight: bold; margin-top: 20px;">品类分析</h3>
+               <ul id="categoryInsights" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
+               <h3 style="font-size: 18px; font-weight: bold; margin-top: 20px;">品类占比</h3>
+               <ul id="categoryShares" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
+           </div>
+           <script>
+               document.getElementById('csvInput').addEventListener('change', function(event) {
+                   const file = event.target.files[0];
+                   if (!file) {
+                       document.getElementById('totalInsight').textContent = '请上传data.csv文件';
+                       return;
+                   }
+                   const reader = new FileReader();
+                   reader.onload = function(e) {
+                       try {
+                           const text = e.target.result;
+                           console.log('文件内容:', text);
+                           const lines = text.trim().split('\n').slice(1);
+                           const data = lines.map((line, index) => {
+                               const parts = line.split(/[,;]/);
+                               console.log('第' + (index + 1) + '行:', parts);
+                               if (parts.length >= 3) {
+                                   return {
+                                       city: parts[0].trim(),
+                                       category: parts[1].trim(),
+                                       sales: parseFloat(parts[2].trim())
+                                   };
+                               }
+                               return null;
+                           }).filter(row => row && row.city && row.category && !isNaN(row.sales));
+                           console.log('解析结果:', data);
+                           const tbody = document.querySelector('#salesTable tbody');
+                           tbody.innerHTML = '';
+                           if (data.length === 0) {
+                               document.getElementById('totalInsight').textContent = '数据不对，请检查data.csv格式（需逗号或分号分隔，无引号或空行）。';
+                               return;
+                           }
+                           data.forEach(row => {
+                               const tr = document.createElement('tr');
+                               tr.innerHTML = `
+                                   <td style="border: 1px solid gray; padding: 8px;">${row.city}</td>
+                                   <td style="border: 1px solid gray; padding: 8px;">${row.category}</td>
+                                   <td style="border: 1px solid gray; padding: 8px;">${row.sales.toLocaleString('zh-CN')}</td>
+                               `;
+                               tbody.appendChild(tr);
+                           });
+                           const cityTotals = data.reduce((acc, item) => {
+                               acc[item.city] = (acc[item.city] || 0) + item.sales;
+                               return acc;
+                           }, {});
+                           const topCity = Object.entries(cityTotals).reduce(
+                               (top, [city, sales]) => sales > top.sales ? { city, sales } : top,
+                               { city: '', sales: 0 }
+                           );
+                           document.getElementById('totalInsight').textContent = 
+                               topCity.city ? 
+                               `${topCity.city}的销售额最高，总额${topCity.sales.toLocaleString('zh-CN')}元，主要是电子产品。` :
+                               '没有有效数据';
+                           const categoryTotals = data.reduce((acc, item) => {
+                               const key = item.category;
+                               if (!acc[key]) acc[key] = {};
+                               acc[key][item.city] = (acc[key][item.city] || 0) + item.sales;
+                               return acc;
+                           }, {});
+                           const categoryInsights = document.getElementById('categoryInsights');
+                           categoryInsights.innerHTML = '';
+                           Object.entries(categoryTotals).forEach(([category, cities]) => {
+                               const topCity = Object.entries(cities).reduce(
+                                   (top, [city, sales]) => sales > top.sales ? { city, sales } : top,
+                                   { city: '', sales: 0 }
+                               );
+                               if (topCity.city) {
+                                   const li = document.createElement('li');
+                                   let preference = '';
+                                   if (category === '图书') {
+                                       preference = '说明该城市消费者更爱读书';
+                                   } else if (category === '服装') {
+                                       preference = '说明该城市消费者注重时尚';
+                                   } else if (category === '电子产品') {
+                                       preference = '说明该城市消费者偏好科技产品';
+                                   } else {
+                                       preference = '说明该城市消费者对该品类有较高需求';
+                                   }
+                                   li.textContent = `${category}：${topCity.city}最高，销售额${topCity.sales.toLocaleString('zh-CN')}元，${preference}。`;
+                                   categoryInsights.appendChild(li);
+                               }
+                           });
+                           const totalSales = data.reduce((sum, item) => sum + item.sales, 0);
+                           const categoryShares = data.reduce((acc, item) => {
+                               acc[item.category] = (acc[item.category] || 0) + item.sales;
+                               return acc;
+                           }, {});
+                           const categorySharesList = document.getElementById('categoryShares');
+                           categorySharesList.innerHTML = '';
+                           Object.entries(categoryShares).forEach(([category, sales]) => {
+                               const percentage = (sales / totalSales * 100).toFixed(2);
+                               const li = document.createElement('li');
+                               li.textContent = `${category}：占总销售额${percentage}%，销售${sales.toLocaleString('zh-CN')}元。`;
+                               categorySharesList.appendChild(li);
+                           });
+                       } catch (error) {
+                           document.getElementById('totalInsight').textContent = '加载失败，请检查data.csv格式或重新上传。';
+                           console.error('错误:', error);
+                       }
+                   };
+                   reader.readAsText(file, 'UTF-8');
+               });
+           </script>
+       </body>
+       </html>
