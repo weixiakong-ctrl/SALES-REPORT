@@ -17,10 +17,6 @@
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h1 class="text-3xl font-bold mb-4 text-center">一线城市电商销售分析报告</h1>
             <p class="text-gray-600 mb-6 text-center">数据来源：2024年电商销售数据</p>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">选择数据文件（data.csv）：</label>
-                <input type="file" id="csvInput" accept=".csv" class="mt-2">
-            </div>
             <h2 class="text-2xl font-semibold mb-4">详细数据</h2>
             <table id="salesTable">
                 <thead>
@@ -33,64 +29,63 @@
                 <tbody></tbody>
             </table>
             <h2 class="text-2xl font-semibold mb-4">数据洞察</h2>
-            <p id="insight" class="text-gray-700">请上传data.csv文件以查看数据。</p>
+            <p id="insight" class="text-gray-700">加载中...</p>
         </div>
     </div>
     <script>
-        document.getElementById('csvInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    // 检测分隔符
-                    const firstLine = text.split('\n')[0];
-                    const separator = firstLine.includes(',') ? ',' : firstLine.includes(';') ? ';' : ',';
-                    const lines = text.trim().split('\n').slice(1);
-                    const data = lines.map(line => {
-                        const parts = line.split(separator);
-                        if (parts.length >= 3) {
-                            return {
-                                city: parts[0].trim(),
-                                category: parts[1].trim(),
-                                sales: parseFloat(parts[2].trim())
-                            };
-                        }
-                        return null;
-                    }).filter(row => row && row.city && row.category && !isNaN(row.sales));
-                    const tbody = document.querySelector('#salesTable tbody');
-                    tbody.innerHTML = '';
-                    if (data.length === 0) {
-                        document.getElementById('insight').textContent = '无有效数据，请检查CSV格式。';
-                        return;
+        fetch('data.csv')
+            .then(response => response.text())
+            .then(text => {
+                console.log('CSV内容:', text); // 调试
+                const firstLine = text.split('\n')[0];
+                const separator = firstLine.includes(',') ? ',' : firstLine.includes(';') ? ';' : ',';
+                console.log('检测到的分隔符:', separator); // 调试
+                const lines = text.trim().split('\n').slice(1);
+                const data = lines.map((line, index) => {
+                    const parts = line.split(separator);
+                    console.log(`行${index + 1}:`, parts); // 调试
+                    if (parts.length >= 3) {
+                        return {
+                            city: parts[0].trim(),
+                            category: parts[1].trim(),
+                            sales: parseFloat(parts[2].trim())
+                        };
                     }
-                    data.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="border p-2">${row.city}</td>
-                            <td class="border p-2">${row.category}</td>
-                            <td class="border p-2">${row.sales.toLocaleString('zh-CN')}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                    const cityTotals = data.reduce((acc, item) => {
-                        acc[item.city] = (acc[item.city] || 0) + item.sales;
-                        return acc;
-                    }, {});
-                    const topCity = Object.entries(cityTotals).reduce(
-                        (top, [city, sales]) => sales > top.sales ? { city, sales } : top,
-                        { city: '', sales: 0 }
-                    );
-                    document.getElementById('insight').textContent = 
-                        topCity.city ? 
-                        `${topCity.city}是销售额最高的城市，总额达到${topCity.sales.toLocaleString('zh-CN')}元，占主导地位的品类是电子产品。` :
-                        '无有效数据';
-                };
-                reader.readAsText(file, 'UTF-8');
-            } else {
-                document.getElementById('insight').textContent = '请上传data.csv文件';
-            }
-        });
+                    return null;
+                }).filter(row => row && row.city && row.category && !isNaN(row.sales));
+                console.log('解析后的数据:', data); // 调试
+                const tbody = document.querySelector('#salesTable tbody');
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    document.getElementById('insight').textContent = '无有效数据，请检查CSV格式。';
+                    return;
+                }
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="border p-2">${row.city}</td>
+                        <td class="border p-2">${row.category}</td>
+                        <td class="border p-2">${row.sales.toLocaleString('zh-CN')}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                const cityTotals = data.reduce((acc, item) => {
+                    acc[item.city] = (acc[item.city] || 0) + item.sales;
+                    return acc;
+                }, {});
+                const topCity = Object.entries(cityTotals).reduce(
+                    (top, [city, sales]) => sales > top.sales ? { city, sales } : top,
+                    { city: '', sales: 0 }
+                );
+                document.getElementById('insight').textContent = 
+                    topCity.city ? 
+                    `${topCity.city}是销售额最高的城市，总额达到${topCity.sales.toLocaleString('zh-CN')}元，占主导地位的品类是电子产品。` :
+                    '无有效数据';
+            })
+            .catch(error => {
+                document.getElementById('insight').textContent = '加载数据失败，请检查data.csv文件。';
+                console.error('Error loading CSV:', error);
+            });
     </script>
 </body>
 </html>
