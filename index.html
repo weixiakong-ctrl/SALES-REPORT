@@ -33,6 +33,10 @@
              <ul id="categoryInsights" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
              <h3 style="font-size: 18px; font-weight: bold; margin-top: 20px;">品类占比</h3>
              <ul id="categoryShares" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
+             <h3 style="font-size: 18px; font-weight: bold; margin-top: 20px;">关键总结</h3>
+             <ul id="keySummary" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
+             <h3 style="font-size: 18px; font-weight: bold; margin-top: 20px;">下个季度应对策略</h3>
+             <ul id="nextQuarterStrategies" style="color: gray; list-style-type: disc; padding-left: 20px;"></ul>
          </div>
          <script>
              fetch('data.csv')
@@ -71,6 +75,7 @@
                          `;
                          tbody.appendChild(tr);
                      });
+                     // 总销售额分析
                      const cityTotals = data.reduce((acc, item) => {
                          acc[item.city] = (acc[item.city] || 0) + item.sales;
                          return acc;
@@ -83,6 +88,7 @@
                          topCity.city ? 
                          `${topCity.city}的销售额最高，总额${topCity.sales.toLocaleString('zh-CN')}元，主要是电子产品。` :
                          '没有有效数据';
+                     // 品类分析
                      const categoryTotals = data.reduce((acc, item) => {
                          const key = item.category;
                          if (!acc[key]) acc[key] = {};
@@ -112,6 +118,7 @@
                              categoryInsights.appendChild(li);
                          }
                      });
+                     // 品类占比
                      const totalSales = data.reduce((sum, item) => sum + item.sales, 0);
                      const categoryShares = data.reduce((acc, item) => {
                          acc[item.category] = (acc[item.category] || 0) + item.sales;
@@ -125,9 +132,54 @@
                          li.textContent = `${category}：占总销售额${percentage}%，销售${sales.toLocaleString('zh-CN')}元。`;
                          categorySharesList.appendChild(li);
                      });
+                     // 关键总结
+                     const keySummary = document.getElementById('keySummary');
+                     keySummary.innerHTML = '';
+                     const topCategory = Object.entries(categoryShares).reduce(
+                         (top, [category, sales]) => sales > top.sales ? { category, sales } : top,
+                         { category: '', sales: 0 }
+                     );
+                     [
+                         `${topCity.city}总销售额最高，达${topCity.sales.toLocaleString('zh-CN')}元，${topCategory.category}贡献最大。`,
+                         Object.keys(categoryTotals).map(category => {
+                             const top = Object.entries(categoryTotals[category]).reduce(
+                                 (t, [c, s]) => s > t[1] ? [c, s] : t,
+                                 ['', 0]
+                             );
+                             return `${category}品类在${top[0]}表现最佳，销售${top[1].toLocaleString('zh-CN')}元。`;
+                         }).join(' '),
+                       `${topCategory.category}占总销售额${(topCategory.sales / totalSales * 100).toFixed(2)}%，显示科技产品需求旺盛。`
+                     ].forEach(text => {
+                         const li = document.createElement('li');
+                         li.textContent = text;
+                         keySummary.appendChild(li);
+                     });
+                     // 下个季度策略
+                     const nextQuarterStrategies = document.getElementById('nextQuarterStrategies');
+                     nextQuarterStrategies.innerHTML = '';
+                     [
+                         `在${topCity.city}加大${topCategory.category}促销，推出新品或促销活动（如科技产品展示会）。`,
+                         Object.keys(categoryTotals).map(category => {
+                             const top = Object.entries(categoryTotals[category]).reduce(
+                                 (t, [c, s]) => s > t[1] ? [c, s] : t,
+                                 ['', 0]
+                             );
+                             let action = '';
+                             if (category === '图书') action = '举办读书会或文学活动';
+                             else if (category === '服装') action = '推出时尚发布会或折扣季';
+                             else if (category === '电子产品') action = '增加新品库存并优化线上推广';
+                             else action = '提升库存和营销活动';
+                             return `在${top[0]}推广${category}，${action}。`;
+                         }).join('|').split('|'),
+                         `其他城市（如广州、深圳）增加${topCategory.category}库存，补齐市场短板。`
+                     ].flat().forEach(text => {
+                         const li = document.createElement('li');
+                         li.textContent = text;
+                         nextQuarterStrategies.appendChild(li);
+                     });
                  })
                  .catch(error => {
-                     document.getElementById('totalInsight').textContent = '加载失败，请检查data.csv是否上传且格式正确。';
+                     document.getElementById('totalInsight').textContent = '加载失败，请确认data.csv已上传且格式正确。';
                      console.error('错误:', error);
                  });
          </script>
