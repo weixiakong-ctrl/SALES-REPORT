@@ -227,7 +227,8 @@
         async function loadData() {
             loadingBar.classList.add('active');
             try {
-                const response = await fetch('https://raw.githubusercontent.com/weixiakong-ctrl/sales-report/main/data.csv');
+                // 替换 YOUR_USERNAME 为你的 GitHub 用户名
+                const response = await fetch('https://raw.githubusercontent.com/YOUR_USERNAME/sales-report/main/data.csv');
                 if (!response.ok) throw new Error('无法加载 data.csv');
                 const text = await response.text();
                 console.log('文件内容:', text);
@@ -434,11 +435,11 @@
                     ...Object.keys(categoryTotals).map(category => {
                         const top = Object.entries(categoryTotals[category]).reduce(
                             (t, [c, s]) => s > t[1] ? [c, s] : t,
-                            ['', null]
+                            ['', 0]
                         );
                         let action = '';
                         if (category === '图书') action = '举办读书会或文学活动';
-                        else if (category === '服装') action = '推出时尚活动或折扣季';
+                        else if (category === '服装') action = '推出时尚发布会或折扣季';
                         else if (category === '电子产品') action = '增加新品库存并优化线上推广';
                         else action = '提升库存和营销活动';
                         return { text: `在${top[0]}推广${category}，${action}。`, icon: strategyIcons[iconIndex++ % strategyIcons.length] };
